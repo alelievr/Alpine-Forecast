@@ -1025,7 +1025,17 @@ function bindInputs() {
   sd.min = formatYMD(today);
   ed.max = formatYMD(addDays(today, 15));
 
-  sd.addEventListener('change', () => { STATE.startDate = sd.value; saveState(); });
+  sd.addEventListener('change', () => {
+    STATE.startDate = sd.value;
+    // If the previous end date is now before start, bump end to start + 1 (within horizon).
+    if (STATE.endDate < STATE.startDate) {
+      const proposed = formatYMD(addDays(new Date(STATE.startDate + 'T00:00:00'), 1));
+      const horizon = formatYMD(addDays(new Date(), 15));
+      STATE.endDate = proposed > horizon ? horizon : proposed;
+      ed.value = STATE.endDate;
+    }
+    saveState();
+  });
   ed.addEventListener('change', () => { STATE.endDate = ed.value; saveState(); });
   sh.addEventListener('change', () => { STATE.startHour = clamp(parseInt(sh.value, 10) || 0, 0, 23); sh.value = STATE.startHour; saveState(); });
   eh.addEventListener('change', () => { STATE.endHour = clamp(parseInt(eh.value, 10) || 24, 1, 24); eh.value = STATE.endHour; saveState(); });
