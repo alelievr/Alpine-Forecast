@@ -105,6 +105,80 @@
   }
   .controls input:focus { border-color: var(--accent); }
 
+  /* Spot search */
+  .search-wrap { position: relative; display: flex; gap: 8px; }
+  .search-wrap input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg-card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+  }
+  .search-wrap input[type="text"]:focus { border-color: var(--accent); }
+  .search-suggestions {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    z-index: 50;
+    overflow: hidden;
+    display: none;
+  }
+  .search-suggestions.open { display: block; }
+  .search-suggestions .sugg {
+    padding: 9px 12px;
+    cursor: pointer;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: baseline;
+  }
+  .search-suggestions .sugg:last-child { border-bottom: none; }
+  .search-suggestions .sugg:hover { background: var(--bg-elev); }
+  .search-suggestions .sugg .place { color: var(--text); }
+  .search-suggestions .sugg .place .cc {
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-left: 6px;
+  }
+  .search-suggestions .sugg .elev { color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  .search-suggestions .sugg.msg { cursor: default; color: var(--text-dim); justify-content: flex-start; }
+  .search-suggestions .sugg.msg:hover { background: transparent; }
+
+  .custom-badge {
+    display: inline-block;
+    background: rgba(76, 194, 255, 0.15);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+  }
+  .remove-spot {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    padding: 2px 7px;
+    font-family: inherit;
+  }
+  .remove-spot:hover { color: var(--bad); border-color: var(--bad); }
+
   .chips {
     display: flex;
     flex-wrap: wrap;
@@ -289,14 +363,27 @@
     font-style: italic;
   }
 
+  /* Strip + per-model rows share one scroll container so columns stay aligned. */
+  .day-scroll {
+    --dcmin: 54px;
+    --dcmax: 1fr;         /* fill the column; min keeps cells legible, scrolls if many days */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .day-scroll::-webkit-scrollbar { height: 6px; }
   .day-strip {
     display: grid;
     grid-auto-flow: column;
-    grid-auto-columns: minmax(46px, 1fr);
+    grid-auto-columns: minmax(var(--dcmin), var(--dcmax));
+    justify-content: start;
     gap: 4px;
-    align-items: end;
+    align-items: stretch;
     padding-top: 4px;
   }
+  .day-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .day-scroll::-webkit-scrollbar-track { background: transparent; }
   .day-cell {
     display: flex;
     flex-direction: column;
@@ -331,6 +418,83 @@
   .day-cell.dry { background: rgba(61, 220, 132, 0.10); border-color: rgba(61, 220, 132, 0.25); }
   .day-cell.wet { background: rgba(229, 72, 77, 0.08); border-color: rgba(229, 72, 77, 0.20); }
   .day-cell.mid { background: rgba(240, 178, 50, 0.08); border-color: rgba(240, 178, 50, 0.20); }
+  .day-cell .alerts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+    margin-top: 3px;
+    font-size: 12px;
+    line-height: 1;
+  }
+  .day-cell .alerts .a-high { filter: none; }
+  .day-cell .alerts .a-warn { opacity: 0.95; }
+  .day-cell .alerts .a-info { opacity: 0.8; }
+  .day-cell.has-alert-high { border-color: rgba(229, 72, 77, 0.55); }
+
+  /* Card-level alert summary strip */
+  .card .alerts-summary {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .card .alerts-summary .alert-line {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 11.5px;
+    color: var(--text-dim);
+  }
+  .card .alerts-summary .alert-line .ic { font-size: 12px; }
+  .card .alerts-summary .alert-line.sev-high { color: var(--bad); }
+  .card .alerts-summary .alert-line.sev-warn { color: var(--mid); }
+  .card .alerts-summary .alert-line .days { color: var(--text-dim); }
+
+  /* Modal alert list */
+  .modal-alerts {
+    margin: 10px 0 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .modal-alerts .alert-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 12.5px;
+    padding: 5px 8px;
+    border-radius: 6px;
+    background: var(--bg-elev);
+  }
+  .modal-alerts .alert-row.sev-high { color: var(--bad); border-left: 3px solid var(--bad); }
+  .modal-alerts .alert-row.sev-warn { color: var(--mid); border-left: 3px solid var(--mid); }
+  .modal-alerts .alert-row.sev-info { color: var(--text-dim); border-left: 3px solid var(--border); }
+
+  /* 0 °C-level chart section */
+  .fz-section {
+    margin-top: 14px;
+    border-top: 1px dashed var(--border);
+    padding-top: 12px;
+  }
+  .fz-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .fz-chart { width: 100%; height: auto; display: block; }
+  .fz-legend {
+    font-size: 10.5px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .fz-legend .k { display: inline-flex; align-items: center; gap: 5px; }
+  .fz-legend .sw { width: 14px; height: 0; border-top-width: 2px; border-top-style: solid; display: inline-block; }
 
   footer {
     max-width: 1200px;
@@ -414,7 +578,8 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 100;
+    /* Above Leaflet's panes (≤700) and controls (≤1000). */
+    z-index: 2000;
     justify-content: center;
     align-items: center;
     padding: 20px;
@@ -594,6 +759,36 @@
   }
   .leaflet-popup-content strong { color: var(--text); }
   .leaflet-popup-content .rank { color: var(--accent); font-weight: 700; }
+  .popup-detail-btn {
+    margin-top: 10px;
+    width: 100%;
+    background: var(--accent);
+    color: #001220;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .popup-detail-btn:hover { filter: brightness(1.1); }
+
+  /* Destination panel: the full card rendered flush inside the modal */
+  #destModalCard > .card {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
+    padding-right: 28px;   /* clear the × close button */
+  }
+  /* Day-detail modal must sit above the destination panel when stacked. */
+  #dayModal { z-index: 2100; }
+  @keyframes cardflash {
+    0%   { box-shadow: 0 0 0 2px var(--accent), var(--shadow); }
+    100% { box-shadow: 0 0 0 0 transparent, var(--shadow); }
+  }
+  .card.flash { animation: cardflash 1.8s ease-out; }
   .leaflet-popup-close-button { color: var(--text-dim) !important; }
   .leaflet-container a.leaflet-popup-close-button:hover { color: var(--text) !important; background: transparent !important; }
   .leaflet-container { background: var(--bg-elev); font-family: inherit; }
@@ -610,14 +805,14 @@
     color: var(--text-dim);
     border-top: 1px dashed var(--border);
     padding-top: 8px;
-  }
-  .model-table .row {
+    /* One shared grid so every row's columns line up (timelines stay aligned). */
     display: grid;
     grid-template-columns: 88px 1fr auto;
-    gap: 8px;
+    gap: 4px 8px;
     align-items: center;
-    padding: 1px 0;
   }
+  .model-table .row { display: contents; }
+  .model-table .row > span:last-child { white-space: nowrap; text-align: right; }
   .model-table .row .name { color: var(--text); }
   .model-table .row .bar {
     height: 4px;
@@ -632,6 +827,152 @@
     background: var(--accent);
     border-radius: 2px;
   }
+  /* Rain-timing variant of the bar: day-grouped hour segments */
+  .model-table .row .bar.timeline {
+    height: 7px;
+    background: transparent;
+    display: flex;
+    gap: 3px;
+    overflow: visible;
+  }
+  .model-table .row .bar.timeline .tl-day {
+    display: flex;
+    flex: 1;
+    height: 100%;
+    border-radius: 2px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .model-table .row .bar.timeline .tl-day > span { display: block; }
+  /* Days beyond a model's forecast horizon — hatched so they don't read as "dry". */
+  .model-table .row .bar.timeline .tl-day.tl-nodata {
+    background: repeating-linear-gradient(45deg,
+      rgba(139,152,165,0.22), rgba(139,152,165,0.22) 2px,
+      transparent 2px, transparent 5px);
+  }
+
+  /* ============================================================
+     RESPONSIVE — tablet and phone
+     ============================================================ */
+
+  /* Tablet / small laptop */
+  @media (max-width: 860px) {
+    header { padding: 18px 16px 6px; }
+    header h1 { font-size: 24px; }
+    main { padding: 14px 16px 56px; }
+    footer { padding: 16px 16px 32px; }
+    .controls { padding: 14px; gap: 14px; }
+  }
+
+  /* Phone */
+  @media (max-width: 560px) {
+    body { font-size: 14px; }
+    header { padding: 16px 12px 4px; }
+    header h1 { font-size: 21px; }
+    header .tagline { font-size: 12.5px; }
+    main { padding: 12px 12px 48px; }
+    footer { padding: 14px 12px 28px; font-size: 11px; }
+
+    /* Single-column controls; let each row span full width */
+    .controls {
+      grid-template-columns: 1fr;
+      padding: 12px;
+      gap: 12px;
+      border-radius: 10px;
+    }
+
+    /* 16px inputs prevent iOS Safari zoom-on-focus */
+    .controls input[type="date"],
+    .controls input[type="number"] {
+      font-size: 16px;
+      padding: 10px 12px;
+    }
+
+    /* Actions: stack, full-width tap targets */
+    .actions {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .compare-toggle {
+      margin-right: 0;
+      flex: 1 1 auto;
+      order: -1;       /* show the toggle above the buttons */
+      font-size: 13px;
+    }
+    .actions button.primary,
+    .actions button.secondary {
+      width: 100%;
+      padding: 13px 16px;
+      font-size: 15px;
+    }
+
+    /* Search row: input on its own line (16px = no iOS zoom), buttons share the next line */
+    .search-wrap { flex-wrap: wrap; }
+    .search-wrap input[type="text"] { flex: 1 1 100%; font-size: 16px; }
+    .search-wrap button.secondary { flex: 1 1 auto; padding: 11px 14px; font-size: 14px; }
+
+    /* Bigger chip tap targets */
+    .chip {
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    /* Summary bar: stack pieces, full-width controls */
+    .summary-bar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+    .view-toggle { margin-left: 0 !important; width: 100%; }
+    .view-toggle button { flex: 1; padding: 9px 12px; font-size: 13px; }
+    .sort-control { margin-left: 0; flex-direction: column; align-items: stretch; gap: 4px; }
+    .sort-control select { font-size: 14px; padding: 8px 10px; width: 100%; }
+
+    /* Cards already 1-col below 720px; tighten spacing */
+    .card { padding: 14px; gap: 12px; border-radius: 10px; }
+    .card h2 { font-size: 16px; }
+
+    /* Slightly wider day cells so the timeline stays legible + tappable */
+    .day-scroll { --dcmin: 56px; --dcmax: 1fr; }
+    .day-cell { padding: 8px 4px; }
+
+    /* Model comparison table fits the narrow column (name may wrap) */
+    .model-table { grid-template-columns: 66px 1fr auto; gap: 4px 6px; font-size: 10px; }
+    .model-table .row .name { line-height: 1.15; }
+
+    /* Link row: bigger tap targets */
+    .card .links a {
+      font-size: 12px;
+      padding: 6px 10px;
+    }
+
+    /* Map a touch shorter so controls stay reachable */
+    #mapContainer { height: 58vh; min-height: 320px; }
+
+    /* Modal: near-full-screen sheet */
+    .modal-backdrop { padding: 0; align-items: flex-end; }
+    .modal-card {
+      max-width: 100%;
+      max-height: 92vh;
+      border-radius: 14px 14px 0 0;
+      padding: 18px 14px;
+    }
+    .modal-card h3 { font-size: 16px; }
+    .modal-summary { gap: 10px; font-size: 13px; }
+    /* Hourly table: keep readable, allow horizontal scroll if needed */
+    .hourly-table { font-size: 11.5px; }
+    .hourly-table th, .hourly-table td { padding: 5px 4px; }
+    .close-btn { font-size: 30px; padding: 8px 12px; }   /* bigger tap target */
+  }
+
+  /* Very small phones */
+  @media (max-width: 380px) {
+    .card .stats { grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+    .stat .value { font-size: 16px; }
+    .day-scroll { --dcmin: 52px; --dcmax: 1fr; }
+    .model-table { grid-template-columns: 58px 1fr auto; }
+  }
 </style>
 </head>
 <body>
@@ -642,6 +983,16 @@
 
   <main>
     <section class="controls" id="controls">
+      <div class="row search-row" style="grid-column:1/-1;">
+        <label class="field" for="spotSearch">Check a specific spot (any place worldwide)</label>
+        <div class="search-wrap">
+          <input type="text" id="spotSearch" placeholder="Search a place — e.g. Kalymnos, Fontainebleau, Yosemite…" autocomplete="off" spellcheck="false" />
+          <button class="secondary" id="spotSearchBtn" type="button">Search</button>
+          <button class="secondary" id="clearSpotsBtn" type="button" style="display:none;">Clear spots</button>
+          <div class="search-suggestions" id="spotSuggestions"></div>
+        </div>
+      </div>
+
       <div class="row">
         <label class="field" for="startDate">Start date</label>
         <input type="date" id="startDate" />
@@ -712,6 +1063,10 @@
 
   <div class="modal-backdrop" id="dayModal">
     <div class="modal-card" id="dayModalCard"></div>
+  </div>
+
+  <div class="modal-backdrop" id="destModal">
+    <div class="modal-card" id="destModalCard"></div>
   </div>
 
 <script>
@@ -826,6 +1181,19 @@ const DESTINATIONS = [
   { id:'lienz',      name:'Lienz / Lienzer Dolomiten', country:'AT', region:'East Tyrol',    lat:46.8281, lon:12.7700, elevation:670,  styles:['alpine','multipitch'],         notes:'Lienzer Dolomiten and Schober group.' },
   { id:'imst',       name:'Imst / Pitztal',       country:'AT', region:'Tyrol',              lat:47.0828, lon:10.8675, elevation:828,  styles:['alpine','multipitch'],         notes:'Pitztal valley alpine, Wildspitze access.' },
   { id:'ehrwald',    name:'Ehrwald (Zugspitze N)',country:'AT', region:'Tyrol',              lat:47.4017, lon:10.9128, elevation:994,  styles:['alpine','multipitch'],         notes:'Austrian side of Zugspitze, Wettersteinwand.' },
+  // Salzburg / Dachstein / Salzkammergut cluster — dense alpine + multipitch terrain
+  { id:'gosau',      name:'Gosau / Gosaukamm',    country:'AT', region:'Salzkammergut',      lat:47.5836, lon:13.5358, elevation:767,  styles:['multipitch','alpine'],         notes:'Bischofsmütze and Gosaukamm — classic Dachstein-west limestone multi-pitch.' },
+  { id:'filzmoos',   name:'Filzmoos (Bischofsmütze)', country:'AT', region:'Salzburg',       lat:47.4356, lon:13.5197, elevation:1057, styles:['multipitch','alpine'],         notes:'Große Bischofsmütze south faces, Dachstein-south crags.' },
+  { id:'gosausee',   name:'Dachstein (Hallstätter Gl.)', country:'AT', region:'Upper Austria', lat:47.4750, lon:13.6056, elevation:2000, styles:['alpine'],                      notes:'Hoher Dachstein glacier routes and via-ferrata from Krippenstein.' },
+  { id:'werfen',     name:'Werfen / Tennengebirge', country:'AT', region:'Salzburg',         lat:47.4731, lon:13.1925, elevation:548,  styles:['multipitch','alpine'],         notes:'Tennengebirge plateau walls, Eiskogel and Streicher.' },
+  { id:'golling',    name:'Golling / Göll',       country:'AT', region:'Salzburg',           lat:47.6017, lon:13.1639, elevation:480,  styles:['alpine','multipitch'],         notes:'Hoher Göll and Schwarzer Göll big limestone faces south of Salzburg.' },
+  { id:'abtenau',    name:'Abtenau (Gosaukamm E)', country:'AT', region:'Salzburg',          lat:47.5697, lon:13.3447, elevation:712,  styles:['multipitch'],                  notes:'Tennengau limestone, Donnerkogel and Lammertal crags.' },
+  { id:'saalfelden', name:'Saalfelden / Steinernes Meer', country:'AT', region:'Salzburg',   lat:47.4275, lon:12.8483, elevation:744,  styles:['alpine','multipitch'],         notes:'Steinernes Meer plateau, Schönfeldspitze and Persailhorn.' },
+  { id:'leogang',    name:'Leogang / Leoganger Steinberge', country:'AT', region:'Salzburg', lat:47.4347, lon:12.7589, elevation:800,  styles:['multipitch','alpine'],         notes:'Birnhorn and Leoganger Steinberge limestone walls.' },
+  { id:'maria_alm',  name:'Maria Alm / Hochkönig N', country:'AT', region:'Salzburg',        lat:47.3942, lon:12.8983, elevation:802,  styles:['alpine','multipitch'],         notes:'North side of the Hochkönig massif, Hundstein crags.' },
+  { id:'bad_aussee', name:'Bad Aussee / Totes Gebirge', country:'AT', region:'Styria',       lat:47.6097, lon:13.7831, elevation:659,  styles:['alpine','multipitch'],         notes:'Totes Gebirge plateau, Trisselwand big wall.' },
+  { id:'bischofshofen', name:'Bischofshofen / Hochkönig E', country:'AT', region:'Salzburg', lat:47.4167, lon:13.2186, elevation:547,  styles:['alpine','multipitch'],         notes:'Eastern Hochkönig access, Mandlwand and Tennengebirge.' },
+  { id:'zell_see',   name:'Zell am See / Schmittenhöhe', country:'AT', region:'Salzburg',     lat:47.3250, lon:12.7944, elevation:757,  styles:['alpine','multipitch'],         notes:'Hub between Hohe Tauern, Steinernes Meer and Leoganger Steinberge.' },
 
   // GERMANY
   { id:'garmisch',   name:'Garmisch / Zugspitze', country:'DE', region:'Bavaria',            lat:47.4917, lon:11.0956, elevation:708,  styles:['alpine','multipitch'],         notes:'Wetterstein, Zugspitze.' },
@@ -895,6 +1263,7 @@ function defaultState() {
     sortBy: 'rain',
     compareModels: false,
     viewMode: 'table',
+    customSpots: [],
   };
 }
 
@@ -943,6 +1312,10 @@ function daysBetween(a, b) {
   const da = new Date(a + 'T00:00:00');
   const db = new Date(b + 'T00:00:00');
   return Math.round((db - da) / 86400000) + 1;
+}
+function isTouchDevice() {
+  return (('ontouchstart' in window) || navigator.maxTouchPoints > 0) &&
+         window.matchMedia('(max-width: 860px)').matches;
 }
 
 /* Open-Meteo weather code → emoji icon. https://open-meteo.com/en/docs */
@@ -1035,6 +1408,14 @@ function bindInputs() {
       ed.value = STATE.endDate;
     }
     saveState();
+    // App-like flow on touch devices: jump straight to picking the end date.
+    if (isTouchDevice()) {
+      ed.focus();
+      // showPicker() opens the native date dialog where supported (Chrome/Edge/Safari 16+).
+      if (typeof ed.showPicker === 'function') {
+        try { ed.showPicker(); } catch (e) { /* needs user gesture; focus already moved */ }
+      }
+    }
   });
   ed.addEventListener('change', () => { STATE.endDate = ed.value; saveState(); });
   sh.addEventListener('change', () => { STATE.startHour = clamp(parseInt(sh.value, 10) || 0, 0, 23); sh.value = STATE.startHour; saveState(); });
@@ -1059,9 +1440,153 @@ function bindInputs() {
     b.addEventListener('click', () => setViewMode(b.dataset.view));
   });
 
-  document.getElementById('searchBtn').addEventListener('click', runSearch);
+  document.getElementById('searchBtn').addEventListener('click', () => {
+    STATE.customSpots = [];   // "Find driest spots" clears searched spots
+    saveState();
+    updateClearBtn();
+    resultMode = 'all';
+    runSearch();
+  });
   document.getElementById('copyLinkBtn').addEventListener('click', copyShareableLink);
+
+  bindSpotSearch();
 }
+
+/* ---------- Spot search (geocoding) ---------- */
+let spotSearchTimer = null;
+let spotSearchSeq = 0;
+
+function bindSpotSearch() {
+  const input = document.getElementById('spotSearch');
+  const btn = document.getElementById('spotSearchBtn');
+  const box = document.getElementById('spotSuggestions');
+
+  const trigger = () => doGeocode(input.value);
+  input.addEventListener('input', () => {
+    clearTimeout(spotSearchTimer);
+    const q = input.value.trim();
+    if (q.length < 2) { closeSuggestions(); return; }
+    spotSearchTimer = setTimeout(trigger, 350);   // debounce live search
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); clearTimeout(spotSearchTimer); trigger(); }
+    else if (e.key === 'Escape') { closeSuggestions(); }
+  });
+  btn.addEventListener('click', () => { clearTimeout(spotSearchTimer); trigger(); });
+
+  document.getElementById('clearSpotsBtn').addEventListener('click', clearSearchedSpots);
+  updateClearBtn();
+
+  // Close the dropdown when clicking elsewhere.
+  document.addEventListener('click', (e) => {
+    if (!box.contains(e.target) && e.target !== input && e.target !== btn) closeSuggestions();
+  });
+}
+
+// Show the "Clear spots" button only when there are searched spots.
+function updateClearBtn() {
+  const b = document.getElementById('clearSpotsBtn');
+  if (b) b.style.display = (STATE.customSpots && STATE.customSpots.length) ? '' : 'none';
+}
+
+function clearSearchedSpots() {
+  STATE.customSpots = [];
+  saveState();
+  updateClearBtn();
+  closeSuggestions();
+  document.getElementById('spotSearch').value = '';
+  if (resultMode === 'custom') {
+    // Was viewing only searched spots → reset to a clean slate.
+    resultMode = 'all';
+    lastResults = [];
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('summaryBar').style.display = 'none';
+    if (mapInstance) updateMapMarkers([]);
+    setStatus('Searched spots cleared. Search a place, or “Find driest spots” for the full list.');
+  } else {
+    runSearch();   // refresh the full list without the removed spots
+  }
+}
+
+function closeSuggestions() {
+  const box = document.getElementById('spotSuggestions');
+  box.classList.remove('open');
+  box.innerHTML = '';
+}
+
+function renderSuggestionMessage(msg) {
+  const box = document.getElementById('spotSuggestions');
+  box.innerHTML = `<div class="sugg msg">${escapeHtml(msg)}</div>`;
+  box.classList.add('open');
+}
+
+async function doGeocode(query) {
+  const q = (query || '').trim();
+  if (q.length < 2) { closeSuggestions(); return; }
+  const seq = ++spotSearchSeq;
+  renderSuggestionMessage('Searching…');
+  try {
+    const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    if (seq !== spotSearchSeq) return;   // a newer search superseded this one
+    const results = (data.results || []).filter(x => x.latitude != null && x.longitude != null);
+    if (!results.length) { renderSuggestionMessage('No place found for “' + q + '”.'); return; }
+    renderSuggestions(results);
+  } catch (e) {
+    if (seq === spotSearchSeq) renderSuggestionMessage('Search failed — check your connection.');
+  }
+}
+
+function renderSuggestions(results) {
+  const box = document.getElementById('spotSuggestions');
+  box.innerHTML = '';
+  results.forEach(res => {
+    const el = document.createElement('div');
+    el.className = 'sugg';
+    const region = [res.admin1, res.country_code].filter(Boolean).join(', ');
+    el.innerHTML =
+      `<span class="place">${escapeHtml(res.name)}<span class="cc">${escapeHtml(region)}</span></span>` +
+      `<span class="elev">${res.elevation != null ? Math.round(res.elevation) + ' m' : ''}</span>`;
+    el.addEventListener('click', () => addCustomSpot(res));
+    box.appendChild(el);
+  });
+  box.classList.add('open');
+}
+
+function addCustomSpot(res) {
+  const lat = Math.round(res.latitude * 10000) / 10000;
+  const lon = Math.round(res.longitude * 10000) / 10000;
+  const id = `custom-${lat}-${lon}`;
+  if (!STATE.customSpots) STATE.customSpots = [];
+  if (!STATE.customSpots.some(s => s.id === id)) {
+    STATE.customSpots.push({
+      id, name: res.name,
+      country: res.country_code || '—',
+      region: [res.admin1, 'custom spot'].filter(Boolean).join(' · '),
+      lat, lon,
+      elevation: res.elevation != null ? Math.round(res.elevation) : 0,
+      styles: ['alpine', 'multipitch', 'sport'],
+      notes: 'Custom spot you searched for.',
+      isCustom: true,
+    });
+    saveState();
+  }
+  updateClearBtn();
+  document.getElementById('spotSearch').value = '';
+  closeSuggestions();
+  resultMode = 'custom';   // show only the searched spot(s)
+  runSearch();
+}
+
+function removeCustomSpot(id) {
+  STATE.customSpots = (STATE.customSpots || []).filter(s => s.id !== id);
+  saveState();
+  updateClearBtn();
+  runSearch();
+}
+window.removeCustomSpot = removeCustomSpot;
 
 function copyShareableLink() {
   const params = new URLSearchParams({
@@ -1115,11 +1640,14 @@ function setCached(url, data) {
 }
 
 async function fetchForecast(loc, startDate, endDate, compareModels) {
+  // Fetch one "context day" before the trip so we know whether it rained the day
+  // before the first climbing day (wet-rock warning). It's hidden from the display.
+  const contextStart = formatYMD(addDays(new Date(startDate + 'T00:00:00'), -1));
   const params = new URLSearchParams({
     latitude: loc.lat,
     longitude: loc.lon,
-    hourly: 'precipitation,rain,snowfall,temperature_2m,freezing_level_height,wind_speed_10m,weather_code',
-    start_date: startDate,
+    hourly: 'precipitation,rain,snowfall,temperature_2m,freezing_level_height,wind_speed_10m,wind_gusts_10m,cape,weather_code',
+    start_date: contextStart,
     end_date: endDate,
     timezone: 'auto',
   });
@@ -1177,17 +1705,17 @@ async function mapWithConcurrency(items, limit, fn, onProgress) {
   return results;
 }
 
-function summarize(data, startHour, endHour, compareModels) {
+function summarize(data, startHour, endHour, compareModels, displayStart) {
   const h = data.hourly;
   if (!h || !Array.isArray(h.time)) return null;
 
   let result;
   if (!compareModels) {
-    result = summarizeOne(h, startHour, endHour, '');
+    result = summarizeOne(h, startHour, endHour, '', displayStart);
   } else {
     const perModel = {};
     for (const m of MODELS) {
-      const s = summarizeOne(h, startHour, endHour, '_' + m.id);
+      const s = summarizeOne(h, startHour, endHour, '_' + m.id, displayStart);
       if (s) perModel[m.id] = s;
     }
     const primary = perModel['best_match'] || Object.values(perModel)[0];
@@ -1222,7 +1750,7 @@ function computeAvgTrust(summary) {
   return count > 0 ? sum / count : 0;
 }
 
-function summarizeOne(h, startHour, endHour, suffix) {
+function summarizeOne(h, startHour, endHour, suffix, displayStart) {
   const time = h.time;
   const get = (key) => h[key + suffix];
   const precip = get('precipitation');
@@ -1232,6 +1760,8 @@ function summarizeOne(h, startHour, endHour, suffix) {
   const temp = get('temperature_2m');
   const freezing = get('freezing_level_height');
   const wind = get('wind_speed_10m');
+  const gust = get('wind_gusts_10m');
+  const cape = get('cape');
   const wcode = get('weather_code');
 
   const byDay = new Map();
@@ -1241,13 +1771,16 @@ function summarizeOne(h, startHour, endHour, suffix) {
     const date = t.substring(0, 10);
     const hour = parseInt(t.substring(11, 13), 10);
     const inWindow = hour >= startHour && hour < endHour;
+    const isNight = hour < 7;        // overnight refreeze window (local 00:00–06:59)
 
     if (!byDay.has(date)) {
       byDay.set(date, {
         date,
-        precip: 0, rain: 0, snow: 0,
+        precip: 0, rain: 0, snow: 0, precipAllDay: 0,
         maxTemp: -Infinity, minTemp: Infinity,
-        minFreezing: Infinity, maxWind: 0,
+        minFreezing: Infinity, maxFreezing: -Infinity,
+        overnightMinFreezing: Infinity, overnightMinTemp: Infinity,
+        maxWind: 0, maxGust: 0, maxCape: 0, maxCapePm: 0,
         wcCounts: {},
         hours: 0,
         validHours: 0,
@@ -1264,9 +1797,20 @@ function summarizeOne(h, startHour, endHour, suffix) {
       temp: temp ? (temp[i] ?? null) : null,
       freezing: freezing ? (freezing[i] ?? null) : null,
       wind: wind ? (wind[i] ?? null) : null,
+      gust: gust ? (gust[i] ?? null) : null,
+      cape: cape ? (cape[i] ?? null) : null,
       wcode: wcode ? (wcode[i] ?? null) : null,
       inWindow,
     });
+
+    // All-day precip (used for the "rock may be wet" prior-day check) — every hour counts.
+    if (precip[i] != null) d.precipAllDay += precip[i];
+
+    // Overnight refreeze tracking (independent of the day window).
+    if (isNight) {
+      if (freezing && freezing[i] != null) d.overnightMinFreezing = Math.min(d.overnightMinFreezing, freezing[i]);
+      if (temp && temp[i] != null) d.overnightMinTemp = Math.min(d.overnightMinTemp, temp[i]);
+    }
 
     if (!inWindow) continue;
     d.hours++;
@@ -1281,9 +1825,17 @@ function summarizeOne(h, startHour, endHour, suffix) {
     }
     if (freezing && freezing[i] != null) {
       d.minFreezing = Math.min(d.minFreezing, freezing[i]);
+      d.maxFreezing = Math.max(d.maxFreezing, freezing[i]);
     }
     if (wind && wind[i] != null) {
       d.maxWind = Math.max(d.maxWind, wind[i]);
+    }
+    if (gust && gust[i] != null) {
+      d.maxGust = Math.max(d.maxGust, gust[i]);
+    }
+    if (cape && cape[i] != null) {
+      d.maxCape = Math.max(d.maxCape, cape[i]);
+      if (hour >= 12) d.maxCapePm = Math.max(d.maxCapePm, cape[i]);
     }
     if (wcode && wcode[i] != null) {
       d.wcCounts[wcode[i]] = (d.wcCounts[wcode[i]] || 0) + 1;
@@ -1299,11 +1851,23 @@ function summarizeOne(h, startHour, endHour, suffix) {
     if (d.maxTemp === -Infinity) d.maxTemp = null;
     if (d.minTemp === Infinity) d.minTemp = null;
     if (d.minFreezing === Infinity) d.minFreezing = null;
+    if (d.maxFreezing === -Infinity) d.maxFreezing = null;
+    if (d.overnightMinFreezing === Infinity) d.overnightMinFreezing = null;
+    if (d.overnightMinTemp === Infinity) d.overnightMinTemp = null;
     d.coverage = d.hours > 0 ? d.validHours / d.hours : 0;
     d.hasData = d.validHours > 0;
   }
 
-  const days = [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
+  // Chronological order including the hidden context day, then link prior-day rain.
+  const allDays = [...byDay.values()].sort((a, b) => a.date.localeCompare(b.date));
+  for (let i = 0; i < allDays.length; i++) {
+    allDays[i].priorDayPrecip = i > 0 ? allDays[i - 1].precipAllDay : null;
+  }
+
+  // Drop the context day (anything before the trip's start) from display + aggregates.
+  const days = displayStart ? allDays.filter(d => d.date >= displayStart) : allDays;
+  days.forEach((d, i) => { d.isFirstDay = i === 0; });
+
   const valid = days.filter(d => d.hasData);
   const totalHours = days.reduce((s, d) => s + d.hours, 0);
   const totalValid = days.reduce((s, d) => s + d.validHours, 0);
@@ -1352,6 +1916,61 @@ function trustClass(t) {
   return 'low';
 }
 
+/* ---------- Climbing condition alerts ---------- */
+// Returns an array of { key, icon, sev: 'high'|'warn'|'info', label } for one day.
+// Warnings only — nothing is emitted when conditions are unremarkable.
+function buildDayAlerts(day, loc) {
+  const alerts = [];
+  if (!day || !day.hasData) return alerts;
+
+  // 1. Wind gusts
+  if (day.maxGust >= 70) {
+    alerts.push({ key: 'gust', icon: '💨', sev: 'high', label: `Severe gusts ${Math.round(day.maxGust)} km/h` });
+  } else if (day.maxGust >= 45) {
+    alerts.push({ key: 'gust', icon: '💨', sev: 'warn', label: `Strong gusts ${Math.round(day.maxGust)} km/h` });
+  }
+
+  // 2. Thunderstorm / convective risk (afternoon-weighted CAPE + thunder weather codes)
+  const thunderWc = day.dominantWc != null && day.dominantWc >= 95;
+  if (thunderWc || day.maxCapePm >= 1500) {
+    alerts.push({ key: 'thunder', icon: '⛈️', sev: 'high', label: `Thunderstorm risk${day.maxCapePm >= 100 ? ` (CAPE ${Math.round(day.maxCapePm)})` : ''}` });
+  } else if (day.maxCapePm >= 800) {
+    alerts.push({ key: 'thunder', icon: '⛈️', sev: 'warn', label: `Afternoon storm risk (CAPE ${Math.round(day.maxCapePm)})` });
+  }
+
+  // 3. Day-after-rain — rock may still be wet (warning only)
+  if (day.priorDayPrecip != null && day.priorDayPrecip >= 3) {
+    const mm = day.priorDayPrecip.toFixed(1);
+    if (day.isFirstDay) {
+      alerts.push({ key: 'wetrock', icon: '💧', sev: 'high', label: `Rock may still be wet — ${mm} mm fell the day before your trip` });
+    } else if (day.priorDayPrecip >= 8) {
+      alerts.push({ key: 'wetrock', icon: '💧', sev: 'high', label: `Rock likely wet — ${mm} mm the previous day` });
+    } else {
+      alerts.push({ key: 'wetrock', icon: '💧', sev: 'warn', label: `Rock may be wet — ${mm} mm the previous day` });
+    }
+  }
+
+  // 4. Fresh snow (only when present)
+  if (day.snow > 0.05) {
+    const cm = day.snow.toFixed(1);
+    alerts.push({ key: 'snow', icon: '❄️', sev: day.snow >= 5 ? 'warn' : 'info', label: `Fresh snow ${cm} cm` });
+  }
+
+  const order = { high: 0, warn: 1, info: 2 };
+  alerts.sort((a, b) => order[a.sev] - order[b.sev]);
+  return alerts;
+}
+
+// Freezing-level trend over the day: overnight low → daytime high.
+function freezingTrend(day) {
+  if (day.overnightMinFreezing == null || day.maxFreezing == null) return null;
+  const delta = day.maxFreezing - day.overnightMinFreezing;
+  let arrow = '→', dir = 'steady';
+  if (delta >= 400) { arrow = '↑'; dir = 'rising'; }
+  else if (delta <= -400) { arrow = '↓'; dir = 'falling'; }
+  return { arrow, dir, delta, low: day.overnightMinFreezing, high: day.maxFreezing };
+}
+
 function avg(arr) {
   if (!arr.length) return null;
   return arr.reduce((s, x) => s + x, 0) / arr.length;
@@ -1396,21 +2015,38 @@ function blockingInputErrors() {
 /* ---------- Search ---------- */
 let lastResults = [];
 let inFlightAbort = null;
+let resultMode = 'all';   // 'all' = curated (+customs), 'custom' = only searched spots
 
 async function runSearch() {
   const clampNotices = clampDatesToHorizon();
   const err = blockingInputErrors();
   if (err) { setStatus(err, true); return; }
 
-  const filtered = DESTINATIONS.filter(d =>
-    STATE.countries.includes(d.country) &&
-    d.styles.some(s => STATE.styles.includes(s))
-  );
-  if (filtered.length === 0) {
-    setStatus('No destinations match the current country/style filters.', true);
-    document.getElementById('results').innerHTML = '';
-    document.getElementById('summaryBar').style.display = 'none';
-    return;
+  const customs = STATE.customSpots || [];
+  let filtered;
+  if (resultMode === 'custom') {
+    // Search mode: show ONLY the searched spot(s), not the curated country list.
+    filtered = customs.slice();
+    if (filtered.length === 0) {
+      setStatus('No spot to check — search for a place in the bar above.', true);
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('summaryBar').style.display = 'none';
+      return;
+    }
+  } else {
+    // Full list: curated destinations matching the filters, plus any custom spots.
+    filtered = customs.concat(
+      DESTINATIONS.filter(d =>
+        STATE.countries.includes(d.country) &&
+        d.styles.some(s => STATE.styles.includes(s))
+      )
+    );
+    if (filtered.length === 0) {
+      setStatus('No destinations match the current country/style filters. Use the search bar to check a specific spot.', true);
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('summaryBar').style.display = 'none';
+      return;
+    }
   }
 
   if (inFlightAbort) inFlightAbort.aborted = true;
@@ -1429,7 +2065,7 @@ async function runSearch() {
     try {
       const data = await fetchForecast(loc, STATE.startDate, STATE.endDate, compare);
       if (myAbort.aborted) return null;
-      const summary = summarize(data, STATE.startHour, STATE.endHour, compare);
+      const summary = summarize(data, STATE.startHour, STATE.endHour, compare, STATE.startDate);
       return { loc, summary, error: null };
     } catch (e) {
       return { loc, summary: null, error: e.message || String(e) };
@@ -1484,8 +2120,11 @@ function render(results) {
   document.getElementById('summaryBar').style.display = '';
   const days = daysBetween(STATE.startDate, STATE.endDate);
   const compareNote = STATE.compareModels ? ' · <strong>5-model compare</strong> on' : '';
+  const label = resultMode === 'custom'
+    ? `<strong>${sorted.length}</strong> searched spot${sorted.length > 1 ? 's' : ''} · <span style="color:var(--text-dim)">“Find driest spots” for the full list</span>`
+    : `<strong>${sorted.length}</strong> destinations`;
   document.getElementById('summaryText').innerHTML =
-    `<strong>${sorted.length}</strong> destinations · ` +
+    `${label} · ` +
     `<strong>${days}</strong> days (${STATE.startDate} → ${STATE.endDate}) · ` +
     `day window <strong>${pad2(STATE.startHour)}:00–${pad2(STATE.endHour)}:00</strong>${compareNote}` +
     ` · <span style="color:var(--text-dim)">click a day for hourly breakdown</span>`;
@@ -1513,6 +2152,7 @@ function pad2(n) { return String(n).padStart(2, '0'); }
 function renderCard({ loc, summary }, rank) {
   const card = document.createElement('article');
   card.className = 'card';
+  card.id = 'card-' + loc.id;
 
   // LEFT
   const left = document.createElement('div');
@@ -1523,7 +2163,11 @@ function renderCard({ loc, summary }, rank) {
   headerRow.innerHTML =
     `<span class="rank">#${rank}</span>` +
     `<h2>${escapeHtml(loc.name)}</h2>` +
-    `<span class="country-badge">${loc.country}</span>`;
+    `<span class="country-badge">${loc.country}</span>` +
+    (loc.isCustom
+      ? `<span class="custom-badge">CUSTOM</span>` +
+        `<button class="remove-spot" type="button" title="Remove this spot" onclick="removeCustomSpot('${loc.id}')">×</button>`
+      : '');
   left.appendChild(headerRow);
 
   const meta = document.createElement('div');
@@ -1572,9 +2216,8 @@ function renderCard({ loc, summary }, rank) {
     left.appendChild(n);
   }
 
-  if (summary.perModel) {
-    left.appendChild(renderModelTable(summary.perModel));
-  }
+  const alertsSummary = renderAlertsSummary(summary.days, loc);
+  if (alertsSummary) left.appendChild(alertsSummary);
 
   const links = document.createElement('div');
   links.className = 'links';
@@ -1583,15 +2226,19 @@ function renderCard({ loc, summary }, rank) {
     { label: 'Yr.no',                   url: `https://www.yr.no/en/forecast/hourly-table/${loc.lat},${loc.lon}` },
     { label: 'Windy',                   url: `https://www.windy.com/?rain,${loc.lat},${loc.lon},10` },
     { label: 'Open-Meteo',              url: `https://open-meteo.com/en/docs#latitude=${loc.lat}&longitude=${loc.lon}` },
-    { label: 'Map',                     url: `https://www.google.com/maps?q=${loc.lat},${loc.lon}` },
+    { label: 'Google Maps',             url: `https://www.google.com/maps?q=${loc.lat},${loc.lon}` },
     { label: 'Camptocamp',              url: `https://www.camptocamp.org/waypoints#q=${encodeURIComponent(loc.name)}` },
   ];
-  links.innerHTML = linkDefs.map(l => `<a href="${l.url}" target="_blank" rel="noopener">${escapeHtml(l.label)}</a>`).join('');
+  links.innerHTML =
+    `<a href="#" onclick="showOnOurMap('${loc.id}'); return false;">Our map ›</a>` +
+    linkDefs.map(l => `<a href="${l.url}" target="_blank" rel="noopener">${escapeHtml(l.label)}</a>`).join('');
   left.appendChild(links);
 
-  // RIGHT — daily strip
+  // RIGHT — daily strip (+ per-model rain-timing rows below it, in compare mode)
   const right = document.createElement('div');
   right.className = 'right';
+  const scroll = document.createElement('div');
+  scroll.className = 'day-scroll';
   const strip = document.createElement('div');
   strip.className = 'day-strip';
   summary.days.forEach(d => {
@@ -1638,6 +2285,15 @@ function renderCard({ loc, summary }, rank) {
     const trustHtml = `<div class="trust ${trustClass(trust)}" title="Trust = lead-time decay${perModelVals ? ' × model agreement' : ''}">trust ${trustPct}%</div>`;
     const noDataHtml = !d.hasData ? `<div class="no-data">no data</div>` : '';
 
+    // Condition alerts + freezing trend
+    const alerts = buildDayAlerts(d, loc);
+    if (alerts.some(a => a.sev === 'high')) cell.classList.add('has-alert-high');
+    const alertsHtml = alerts.length
+      ? `<div class="alerts">${alerts.map(a => `<span class="a-${a.sev}" title="${escapeHtml(a.label)}">${a.icon}</span>`).join('')}</div>`
+      : '';
+    const trend = freezingTrend(d);
+    const fzCell = trend ? `0°C ${fz} ${trend.arrow}` : `0°C ${fz}`;
+
     cell.innerHTML = `
       <div class="date">${wd}</div>
       <div class="date">${md}</div>
@@ -1647,30 +2303,87 @@ function renderCard({ loc, summary }, rank) {
       ${agreementHtml}
       ${noDataHtml}
       <div class="temp">${d.maxTemp != null ? Math.round(d.maxTemp) + '°' : '—'} / ${d.minTemp != null ? Math.round(d.minTemp) + '°' : '—'}</div>
-      <div class="freezing">0°C ${fz}</div>
+      <div class="freezing">${fzCell}</div>
+      ${alertsHtml}
       ${trustHtml}
     `;
+    const alertLines = alerts.length ? '\n\nAlerts:\n' + alerts.map(a => `  ${a.icon} ${a.label}`).join('\n') : '';
+    const trendLine = trend
+      ? `\nFreezing level: overnight ${Math.round(trend.low)} m → daytime ${Math.round(trend.high)} m (${trend.dir})`
+      : '';
     cell.title =
       `${d.date} — click for hourly breakdown\n` +
       `Daytime rain: ${d.precip.toFixed(1)} mm (rain ${d.rain.toFixed(1)} mm, snow ${d.snow.toFixed(1)} cm)\n` +
       `Temp: ${d.minTemp != null ? d.minTemp.toFixed(0) : '—'}°C – ${d.maxTemp != null ? d.maxTemp.toFixed(0) : '—'}°C\n` +
-      `Min freezing level (daytime): ${d.minFreezing != null ? Math.round(d.minFreezing) + ' m' : '—'}\n` +
-      `Max wind: ${d.maxWind.toFixed(0)} km/h\n` +
+      `Min freezing level (daytime): ${d.minFreezing != null ? Math.round(d.minFreezing) + ' m' : '—'}` +
+      trendLine + `\n` +
+      `Max wind: ${d.maxWind.toFixed(0)} km/h · max gust: ${d.maxGust.toFixed(0)} km/h\n` +
       `Trust: ${trustPct}% (lead-time${perModelVals ? ' × model agreement' : ' decay only'})` +
-      tooltipExtra;
+      tooltipExtra + alertLines;
     cell.addEventListener('click', () => {
       showDayModal(loc, d, summary);
     });
     strip.appendChild(cell);
   });
-  right.appendChild(strip);
+  scroll.appendChild(strip);
+  right.appendChild(scroll);
+  // Compare mode: model comparison + rain-timing lines fill the area under the strip.
+  if (summary.perModel) {
+    right.appendChild(renderModelTable(summary, summary.days, STATE.startHour, STATE.endHour));
+  }
 
   card.appendChild(left);
   card.appendChild(right);
   return card;
 }
 
-function renderModelTable(perModel) {
+// Hourly rain color for a single timeline segment.
+function rainSegColor(p) {
+  if (p == null || p < 0.1) return 'transparent';
+  if (p < 0.5) return 'rgba(76,194,255,0.55)';   // light
+  if (p < 2)   return 'var(--mid)';               // moderate
+  return 'var(--bad)';                            // heavy
+}
+
+// Aggregate alerts across the trip into one line per alert type, with day counts.
+function renderAlertsSummary(days, loc) {
+  const groups = new Map();  // key -> { icon, sev, count, label }
+  const sevRank = { high: 0, warn: 1, info: 2 };
+  for (const d of days) {
+    for (const a of buildDayAlerts(d, loc)) {
+      const g = groups.get(a.key);
+      if (!g) {
+        groups.set(a.key, { icon: a.icon, sev: a.sev, count: 1, label: a.label });
+      } else {
+        g.count++;
+        if (sevRank[a.sev] < sevRank[g.sev]) { g.sev = a.sev; g.label = a.label; }
+      }
+    }
+  }
+  if (!groups.size) return null;
+
+  const LABELS = {
+    gust: 'Strong wind/gusts', thunder: 'Storm risk',
+    wetrock: 'Rock may be wet', snow: 'Fresh snow',
+  };
+  const wrap = document.createElement('div');
+  wrap.className = 'alerts-summary';
+  const ordered = [...groups.entries()].sort((a, b) => sevRank[a[1].sev] - sevRank[b[1].sev]);
+  for (const [key, g] of ordered) {
+    const line = document.createElement('div');
+    line.className = `alert-line sev-${g.sev}`;
+    line.title = g.label;
+    line.innerHTML = `<span class="ic">${g.icon}</span><span>${escapeHtml(LABELS[key] || key)}</span>` +
+      `<span class="days">· ${g.count} day${g.count > 1 ? 's' : ''}</span>`;
+    wrap.appendChild(line);
+  }
+  return wrap;
+}
+
+// Model comparison: one line per model — name (colored) | rain-timing timeline | total.
+// The timeline shows WHEN rain falls (day-grouped hour segments within the day window).
+function renderModelTable(summary, days, startHour, endHour) {
+  const perModel = summary.perModel;
   const wrap = document.createElement('div');
   wrap.className = 'model-table';
   const totals = MODELS
@@ -1684,33 +2397,46 @@ function renderModelTable(perModel) {
       coverage: perModel[m.id].coverage,
     }));
   if (!totals.length) return wrap;
-  const max = Math.max(0.5, ...totals.map(t => t.total));
   const lo = Math.min(...totals.map(t => t.total));
   const hi = Math.max(...totals.map(t => t.total));
   const spread = hi - lo;
   const anyShortfall = totals.some(t => t.coverage < 0.95 || t.totalDays < t.requestedDays);
 
+  const hours = [];
+  for (let h = startHour; h < endHour; h++) hours.push(h);
+
   const head = document.createElement('div');
-  head.style.cssText = 'display:flex; justify-content:space-between; gap:8px; margin-bottom:4px; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim);';
+  head.style.cssText = 'grid-column:1/-1; display:flex; justify-content:space-between; gap:8px; margin-bottom:2px; font-size:10px; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-dim);';
   const agreementCls = spread < 2 ? 'good' : spread < 8 ? 'mid' : 'bad';
   const agreementText = spread < 2 ? 'models agree' : spread < 8 ? 'partial agreement' : 'models disagree';
   head.innerHTML = `
-    <span>Model comparison${anyShortfall ? ' · <span style="color:var(--mid)">partial coverage</span>' : ''}</span>
+    <span>Model comparison · rain timing${anyShortfall ? ' · <span style="color:var(--mid)">partial coverage</span>' : ''}</span>
     <span style="color:var(--${agreementCls})">${agreementText} · range ${spread.toFixed(1)} mm</span>
   `;
   wrap.appendChild(head);
 
   totals.forEach(t => {
+    const ms = perModel[t.id];
+    let tl = '';
+    for (const d of days) {
+      const dd = ms.days.find(x => x.date === d.date);
+      const noData = !(dd && dd.hasData);
+      let segs = '';
+      let title = `${t.label} · ${d.date}: no data (beyond this model's forecast range)`;
+      if (!noData) {
+        const byHour = {};
+        (dd.hourly || []).forEach(h => { byHour[h.hour] = h.precip; });
+        segs = hours.map(h => `<span style="flex:1;background:${rainSegColor(byHour[h])};"></span>`).join('');
+        title = `${t.label} · ${d.date}: ${dd.precip.toFixed(1)} mm in the day window`;
+      }
+      tl += `<span class="tl-day${noData ? ' tl-nodata' : ''}" title="${escapeHtml(title)}">${segs}</span>`;
+    }
     const row = document.createElement('div');
     row.className = 'row';
-    const pct = (t.total / max) * 100;
-    const coverWarn = (t.coverage < 0.95 || t.totalDays < t.requestedDays)
-      ? ` <span style="color:var(--mid)">· ${t.totalDays}/${t.requestedDays} d</span>`
-      : '';
     row.innerHTML = `
       <span class="name" style="color:${t.color}">${escapeHtml(t.label)}</span>
-      <div class="bar"><span style="width:${pct.toFixed(0)}%; background:${t.color}"></span></div>
-      <span>${t.total.toFixed(1)} mm · ${t.dryDays}/${t.totalDays} dry${coverWarn}</span>
+      <div class="bar timeline">${tl}</div>
+      <span>${t.total.toFixed(1)} mm · ${t.dryDays}/${t.totalDays} dry</span>
     `;
     wrap.appendChild(row);
   });
@@ -1721,6 +2447,65 @@ function escapeHtml(s) {
   return String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// Inline SVG line chart of the 0 °C (freezing) level across the day's hours.
+// The location's base elevation is drawn as a dashed reference line; the configured
+// day window is shaded. Returns '' when there isn't enough data.
+function renderFreezingChart(day, loc) {
+  const pts = (day.hourly || []).filter(h => h.freezing != null);
+  if (pts.length < 2) return '';
+
+  const C_LINE = '#4cc2ff', C_ELEV = '#f0b232', C_GRID = '#2a3540', C_DIM = '#8b98a5';
+  const W = 480, H = 180, padL = 46, padR = 14, padT = 12, padB = 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+
+  const vals = pts.map(p => p.freezing);
+  let yMin = Math.min(...vals, loc.elevation);
+  let yMax = Math.max(...vals, loc.elevation);
+  if (yMin === yMax) { yMin -= 100; yMax += 100; }
+  const padY = (yMax - yMin) * 0.12 || 100;
+  yMin -= padY; yMax += padY;
+
+  const xMin = 0, xMax = 23;
+  const xOf = h => padL + ((Math.min(h, xMax) - xMin) / (xMax - xMin)) * plotW;
+  const yOf = v => padT + (1 - (v - yMin) / (yMax - yMin)) * plotH;
+
+  const wx0 = xOf(STATE.startHour);
+  const wx1 = xOf(Math.min(STATE.endHour, xMax));
+  const line = pts.map(p => `${xOf(p.hour).toFixed(1)},${yOf(p.freezing).toFixed(1)}`).join(' ');
+  const elevY = yOf(loc.elevation);
+
+  let yAxis = '';
+  const ticks = 4;
+  for (let t = 0; t <= ticks; t++) {
+    const v = yMin + (yMax - yMin) * t / ticks;
+    const y = yOf(v);
+    yAxis += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="${C_GRID}" stroke-width="1"/>`;
+    yAxis += `<text x="${padL - 6}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="9" fill="${C_DIM}">${Math.round(v)}</text>`;
+  }
+  let xAxis = '';
+  for (let hh = 0; hh <= 24; hh += 6) {
+    const x = xOf(hh);
+    xAxis += `<text x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="9" fill="${C_DIM}">${pad2(hh % 24)}:00</text>`;
+  }
+  const area = `${xOf(pts[0].hour).toFixed(1)},${yOf(yMin).toFixed(1)} ${line} ${xOf(pts[pts.length - 1].hour).toFixed(1)},${yOf(yMin).toFixed(1)}`;
+
+  return `
+    <svg class="fz-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Freezing level over the day">
+      <rect x="${wx0.toFixed(1)}" y="${padT}" width="${(wx1 - wx0).toFixed(1)}" height="${plotH}" fill="rgba(76,194,255,0.08)"/>
+      ${yAxis}
+      <polygon points="${area}" fill="rgba(76,194,255,0.12)"/>
+      <polyline points="${line}" fill="none" stroke="${C_LINE}" stroke-width="2" stroke-linejoin="round"/>
+      <line x1="${padL}" y1="${elevY.toFixed(1)}" x2="${W - padR}" y2="${elevY.toFixed(1)}" stroke="${C_ELEV}" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="${W - padR}" y="${(elevY - 4).toFixed(1)}" text-anchor="end" font-size="9" fill="${C_ELEV}">base ${loc.elevation} m</text>
+      ${xAxis}
+    </svg>
+    <div class="fz-legend">
+      <span class="k"><span class="sw" style="border-top-color:${C_LINE}"></span>0 °C level (m)</span>
+      <span class="k"><span class="sw" style="border-top-color:${C_ELEV};border-top-style:dashed"></span>base elevation</span>
+      <span class="k">shaded = day window</span>
+    </div>`;
 }
 
 /* ---------- Day-detail modal ---------- */
@@ -1769,16 +2554,34 @@ function showDayModal(loc, day, summary) {
     if (h.inWindow) cls += ' in-window';
     if (h.precip != null && h.precip >= 0.5 && h.precip < 2) cls += ' has-rain';
     if (h.precip != null && h.precip >= 2) cls += ' has-much-rain';
+    const gustTxt = h.gust != null ? Math.round(h.gust) + '' : '—';
     return `
       <tr class="${cls.trim()}">
         <td>${pad2(h.hour)}:00</td>
         <td>${wcIcon(h.wcode)}</td>
         <td class="precip">${h.precip != null ? h.precip.toFixed(1) + ' mm' : '—'}</td>
         <td>${h.temp != null ? Math.round(h.temp) + '°C' : '—'}</td>
-        <td>${h.freezing != null ? Math.round(h.freezing) + ' m' : '—'}</td>
-        <td>${h.wind != null ? Math.round(h.wind) + ' km/h' : '—'}</td>
+        <td>${h.wind != null ? Math.round(h.wind) : '—'} / ${gustTxt}</td>
       </tr>`;
   }).join('');
+
+  // Condition alerts for this day
+  const dayAlerts = buildDayAlerts(day, loc);
+  const alertsHtml = dayAlerts.length ? `
+    <div class="modal-alerts">
+      ${dayAlerts.map(a => `<div class="alert-row sev-${a.sev}"><span>${a.icon}</span><span>${escapeHtml(a.label)}</span></div>`).join('')}
+    </div>` : '';
+
+  // 0 °C-level chart (always shown, below the hourly table)
+  const fzChart = renderFreezingChart(day, loc);
+  const overnightNote = (day.overnightMinFreezing != null)
+    ? ` — overnight low ${Math.round(day.overnightMinFreezing)} m${day.overnightMinFreezing <= loc.elevation ? ' (refroze at base)' : ' (no refreeze at base)'}`
+    : '';
+  const fzSectionHtml = fzChart ? `
+    <div class="fz-section">
+      <div class="fz-title">0 °C level through the day${overnightNote}</div>
+      ${fzChart}
+    </div>` : '';
 
   // External cross-check links
   const noonTs = Math.floor(new Date(day.date + 'T12:00:00Z').getTime() / 1000);
@@ -1802,19 +2605,23 @@ function showDayModal(loc, day, summary) {
       <span><strong>${day.precip.toFixed(1)} mm</strong> daytime rain${snowNote}</span>
       ${tempLine ? `<span>${tempLine}</span>` : ''}
       ${fzAvg ? `<span>${fzAvg}</span>` : ''}
-      <span>Max wind: ${Math.round(day.maxWind)} km/h</span>
+      <span>Wind ${Math.round(day.maxWind)} / gust ${Math.round(day.maxGust)} km/h</span>
     </div>
+
+    ${alertsHtml}
 
     ${modelsHtml}
 
     <table class="hourly-table">
       <thead>
-        <tr><th>Hour</th><th>Wx</th><th>Rain</th><th>Temp</th><th>Frz lvl</th><th>Wind</th></tr>
+        <tr><th>Hour</th><th>Wx</th><th>Rain</th><th>Temp</th><th>Wind/gust</th></tr>
       </thead>
       <tbody>${hourlyRows}</tbody>
     </table>
 
-    <div class="modal-note">Highlighted rows are inside the configured day window. Daytime rain total above is the sum of those rows only.</div>
+    <div class="modal-note">Highlighted rows are inside the configured day window. Daytime rain total above is the sum of those rows only. Wind column shows mean / gust (km/h).</div>
+
+    ${fzSectionHtml}
 
     <div class="modal-links">
       <span>Cross-check this location:</span>
@@ -1833,11 +2640,21 @@ function closeDayModal() {
   document.getElementById('dayModal').classList.remove('open');
 }
 
+function closeDestModal() {
+  document.getElementById('destModal').classList.remove('open');
+}
+
 document.getElementById('dayModal').addEventListener('click', (e) => {
   if (e.target.id === 'dayModal') closeDayModal();
 });
+document.getElementById('destModal').addEventListener('click', (e) => {
+  if (e.target.id === 'destModal') closeDestModal();
+});
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeDayModal();
+  if (e.key !== 'Escape') return;
+  // Close the topmost open modal first (day detail can stack over the dest panel).
+  if (document.getElementById('dayModal').classList.contains('open')) closeDayModal();
+  else if (document.getElementById('destModal').classList.contains('open')) closeDestModal();
 });
 
 /* ---------- Map view ---------- */
@@ -1901,7 +2718,9 @@ function updateMapMarkers(results) {
       <div style="color:var(--text-dim); font-size:11px; margin-top:2px;">
         Avg freezing ${fz} · max temp ${temp} · trust ${trustPct}%
       </div>
+      <button class="popup-detail-btn" type="button" onclick="openDestinationDetails('${loc.id}')">View day-by-day details ›</button>
     `, { maxWidth: 280 });
+    marker._locId = loc.id;
     marker.addTo(map);
     mapMarkers.push(marker);
     bounds.push([loc.lat, loc.lon]);
@@ -1934,6 +2753,52 @@ function setViewMode(mode) {
     resultsEl.style.display = '';
   }
 }
+
+// Opened from a map popup: show the destination's full card in a panel over the map.
+function openDestinationDetails(locId) {
+  const sorted = sortResults(lastResults);
+  const idx = sorted.findIndex(r => r.loc.id === locId);
+  if (idx < 0) return;
+
+  const card = renderCard(sorted[idx], idx + 1);
+  card.removeAttribute('id');   // avoid duplicate id with the list copy
+
+  const host = document.getElementById('destModalCard');
+  host.innerHTML = '';
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close-btn';
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', 'Close');
+  closeBtn.textContent = '×';
+  closeBtn.addEventListener('click', closeDestModal);
+  host.appendChild(closeBtn);
+  host.appendChild(card);
+
+  host.scrollTop = 0;
+  document.getElementById('destModal').classList.add('open');
+}
+window.openDestinationDetails = openDestinationDetails;
+
+// From a card link: switch to the in-app map, center on this destination, open its popup.
+function showOnOurMap(locId) {
+  closeDestModal();   // in case it was opened from the panel
+  setViewMode('map');
+  const mapEl = document.getElementById('mapContainer');
+  if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  const focus = () => {
+    const m = ensureMap();
+    if (!m) return false;
+    const marker = mapMarkers.find(mk => mk._locId === locId);
+    if (!marker) return false;
+    m.setView(marker.getLatLng(), 10, { animate: true });
+    marker.openPopup();
+    return true;
+  };
+  // setViewMode rebuilds markers on a 50 ms timer; focus once they exist, with one retry.
+  setTimeout(() => { if (!focus()) setTimeout(focus, 220); }, 120);
+}
+window.showOnOurMap = showOnOurMap;
 
 /* ---------- Init ---------- */
 buildChipUI();
