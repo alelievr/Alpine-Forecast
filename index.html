@@ -660,6 +660,23 @@
   .hourly-table tr.in-window td:first-child { color: var(--accent); font-weight: 600; }
   .hourly-table tr.has-rain td.precip { color: var(--mid); font-weight: 600; }
   .hourly-table tr.has-much-rain td.precip { color: var(--bad); font-weight: 600; }
+  .source-select {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0 2px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .source-select select {
+    background: var(--bg-elev);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
+    color-scheme: dark;
+  }
   .modal-models {
     margin-top: 12px;
     padding: 10px 12px;
@@ -2509,47 +2526,10 @@ function renderFreezingChart(day, loc) {
 }
 
 /* ---------- Day-detail modal ---------- */
-function showDayModal(loc, day, summary) {
-  const card = document.getElementById('dayModalCard');
-  const dateObj = new Date(day.date + 'T00:00:00');
-  const dayLabel = dateObj.toLocaleDateString(undefined, {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-  });
-
-  // Per-model values for this day (only when compareModels is on)
-  let modelsHtml = '';
-  if (summary.perModel) {
-    const rows = MODELS
-      .map(m => {
-        const ms = summary.perModel[m.id];
-        if (!ms) return null;
-        const dd = ms.days.find(x => x.date === day.date);
-        if (!dd || !dd.hasData) return null;
-        return { ...m, value: dd.precip };
-      })
-      .filter(Boolean);
-    if (rows.length) {
-      const max = Math.max(0.5, ...rows.map(r => r.value));
-      modelsHtml = `
-        <div class="modal-models">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);margin-bottom:6px;">Per-model daytime rain (this day)</div>
-          ${rows.map(r => {
-            const pct = (r.value / max) * 100;
-            return `<div class="model-row">
-              <span style="color:${r.color}">${escapeHtml(r.label)}</span>
-              <div class="bar" style="height:4px;background:var(--bg-card);border-radius:2px;overflow:hidden;">
-                <span style="display:block;height:100%;width:${pct.toFixed(0)}%;background:${r.color};"></span>
-              </div>
-              <span>${r.value.toFixed(1)} mm</span>
-            </div>`;
-          }).join('')}
-        </div>
-      `;
-    }
-  }
-
-  // Hourly table
-  const hourlyRows = (day.hourly || []).map(h => {
+// Source-dependent part of the day modal (summary line, alerts, hourly table,
+// note, freezing chart) for a given day object `d` from one model.
+function renderDayDetailDynamic(d, loc, sourceLabel, hasCompare) {
+  const hourlyRows = (d.hourly || []).map(h => {
     let cls = '';
     if (h.inWindow) cls += ' in-window';
     if (h.precip != null && h.precip >= 0.5 && h.precip < 2) cls += ' has-rain';
@@ -2565,23 +2545,112 @@ function showDayModal(loc, day, summary) {
       </tr>`;
   }).join('');
 
-  // Condition alerts for this day
-  const dayAlerts = buildDayAlerts(day, loc);
+  const dayAlerts = buildDayAlerts(d, loc);
   const alertsHtml = dayAlerts.length ? `
     <div class="modal-alerts">
       ${dayAlerts.map(a => `<div class="alert-row sev-${a.sev}"><span>${a.icon}</span><span>${escapeHtml(a.label)}</span></div>`).join('')}
     </div>` : '';
 
-  // 0 °C-level chart (always shown, below the hourly table)
-  const fzChart = renderFreezingChart(day, loc);
-  const overnightNote = (day.overnightMinFreezing != null)
-    ? ` — overnight low ${Math.round(day.overnightMinFreezing)} m${day.overnightMinFreezing <= loc.elevation ? ' (refroze at base)' : ' (no refreeze at base)'}`
+  const fzChart = renderFreezingChart(d, loc);
+  const overnightNote = (d.overnightMinFreezing != null)
+    ? ` — overnight low ${Math.round(d.overnightMinFreezing)} m${d.overnightMinFreezing <= loc.elevation ? ' (refroze at base)' : ' (no refreeze at base)'}`
     : '';
   const fzSectionHtml = fzChart ? `
     <div class="fz-section">
       <div class="fz-title">0 °C level through the day${overnightNote}</div>
       ${fzChart}
     </div>` : '';
+
+  const fzAvg = d.minFreezing != null ? `Min freezing ${Math.round(d.minFreezing)} m` : '';
+  const tempLine = (d.maxTemp != null && d.minTemp != null)
+    ? `${Math.round(d.minTemp)}°C – ${Math.round(d.maxTemp)}°C`
+    : '';
+  const snowNote = d.snow > 0.05 ? ` · Snow: ${d.snow.toFixed(1)} cm` : '';
+
+  const note = hasCompare
+    ? `Hourly table &amp; chart show the <strong>${escapeHtml(sourceLabel)}</strong> model — switch source above. Per-model daily totals are shown for comparison.`
+    : `Hourly table &amp; chart use the <strong>Best-match</strong> model (Open-Meteo's auto-selected best model for this location).`;
+
+  return `
+    <div class="modal-summary">
+      <span><strong>${d.precip.toFixed(1)} mm</strong> daytime rain${snowNote}</span>
+      ${tempLine ? `<span>${tempLine}</span>` : ''}
+      ${fzAvg ? `<span>${fzAvg}</span>` : ''}
+      <span>Wind ${Math.round(d.maxWind)} / gust ${Math.round(d.maxGust)} km/h</span>
+    </div>
+    ${alertsHtml}
+    <table class="hourly-table">
+      <thead>
+        <tr><th>Hour</th><th>Wx</th><th>Rain</th><th>Temp</th><th>Wind/gust</th></tr>
+      </thead>
+      <tbody>${hourlyRows}</tbody>
+    </table>
+    <div class="modal-note">${note} Highlighted rows are inside the configured day window; the daytime rain total is the sum of those rows. Wind column shows mean / gust (km/h).</div>
+    ${fzSectionHtml}
+  `;
+}
+
+function showDayModal(loc, day, summary) {
+  const card = document.getElementById('dayModalCard');
+  const dateObj = new Date(day.date + 'T00:00:00');
+  const dayLabel = dateObj.toLocaleDateString(undefined, {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  // Available hourly sources for this day (compare mode): models that returned hourly data.
+  const sources = [];
+  if (summary.perModel) {
+    for (const m of MODELS) {
+      const ms = summary.perModel[m.id];
+      if (!ms) continue;
+      const dd = ms.days.find(x => x.date === day.date);
+      if (dd && dd.hasData && dd.hourly && dd.hourly.length) {
+        sources.push({ id: m.id, label: m.label, day: dd });
+      }
+    }
+  }
+  const hasCompare = sources.length > 1;
+
+  // Per-model daily totals (comparison)
+  let modelsHtml = '';
+  if (summary.perModel) {
+    const rows = MODELS.map(m => {
+      const ms = summary.perModel[m.id];
+      if (!ms) return null;
+      const dd = ms.days.find(x => x.date === day.date);
+      if (!dd || !dd.hasData) return null;
+      return { ...m, value: dd.precip };
+    }).filter(Boolean);
+    if (rows.length) {
+      const max = Math.max(0.5, ...rows.map(r => r.value));
+      modelsHtml = `
+        <div class="modal-models">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim);margin-bottom:6px;">Per-model daytime rain (this day)</div>
+          ${rows.map(r => {
+            const pct = (r.value / max) * 100;
+            return `<div class="model-row">
+              <span style="color:${r.color}">${escapeHtml(r.label)}</span>
+              <div class="bar" style="height:4px;background:var(--bg-card);border-radius:2px;overflow:hidden;">
+                <span style="display:block;height:100%;width:${pct.toFixed(0)}%;background:${r.color};"></span>
+              </div>
+              <span>${r.value.toFixed(1)} mm</span>
+            </div>`;
+          }).join('')}
+        </div>`;
+    }
+  }
+
+  // Source selector (only when more than one source has hourly data)
+  let selectorHtml = '';
+  if (hasCompare) {
+    selectorHtml = `
+      <div class="source-select">
+        <label for="daySourceSelect">Hourly source</label>
+        <select id="daySourceSelect">
+          ${sources.map(s => `<option value="${s.id}"${s.id === 'best_match' ? ' selected' : ''}>${escapeHtml(s.label)}</option>`).join('')}
+        </select>
+      </div>`;
+  }
 
   // External cross-check links
   const noonTs = Math.floor(new Date(day.date + 'T12:00:00Z').getTime() / 1000);
@@ -2590,39 +2659,16 @@ function showDayModal(loc, day, summary) {
   const meteoblueMM = `https://www.meteoblue.com/en/weather/forecast/multimodel/${meteoblueCoord(loc.lat, loc.lon)}`;
   const windyUrl = `https://www.windy.com/?${noonTs}/${loc.lat},${loc.lon},10`;
 
-  const fzAvg = day.minFreezing != null ? `Min freezing ${Math.round(day.minFreezing)} m` : '';
-  const tempLine = (day.maxTemp != null && day.minTemp != null)
-    ? `${Math.round(day.minTemp)}°C – ${Math.round(day.maxTemp)}°C`
-    : '';
-  const snowNote = day.snow > 0.05 ? ` · Snow: ${day.snow.toFixed(1)} cm` : '';
+  // Default to Best-match (the passed `day`), else first available source.
+  const initial = hasCompare ? (sources.find(s => s.id === 'best_match') || sources[0]) : { label: 'Best-match', day };
 
   card.innerHTML = `
     <button class="close-btn" type="button" id="dayModalClose" aria-label="Close">×</button>
     <h3>${escapeHtml(loc.name)} — ${dayLabel}</h3>
     <div class="modal-meta">${escapeHtml(loc.region)} · ${loc.elevation} m · day window ${pad2(STATE.startHour)}:00–${pad2(STATE.endHour)}:00</div>
-
-    <div class="modal-summary">
-      <span><strong>${day.precip.toFixed(1)} mm</strong> daytime rain${snowNote}</span>
-      ${tempLine ? `<span>${tempLine}</span>` : ''}
-      ${fzAvg ? `<span>${fzAvg}</span>` : ''}
-      <span>Wind ${Math.round(day.maxWind)} / gust ${Math.round(day.maxGust)} km/h</span>
-    </div>
-
-    ${alertsHtml}
-
+    ${selectorHtml}
     ${modelsHtml}
-
-    <table class="hourly-table">
-      <thead>
-        <tr><th>Hour</th><th>Wx</th><th>Rain</th><th>Temp</th><th>Wind/gust</th></tr>
-      </thead>
-      <tbody>${hourlyRows}</tbody>
-    </table>
-
-    <div class="modal-note">Highlighted rows are inside the configured day window. Daytime rain total above is the sum of those rows only. Wind column shows mean / gust (km/h).</div>
-
-    ${fzSectionHtml}
-
+    <div id="dayDetailDynamic">${renderDayDetailDynamic(initial.day, loc, initial.label, hasCompare)}</div>
     <div class="modal-links">
       <span>Cross-check this location:</span>
       <a href="${yrUrl}" target="_blank" rel="noopener">Yr.no daily</a>
@@ -2634,6 +2680,14 @@ function showDayModal(loc, day, summary) {
 
   document.getElementById('dayModal').classList.add('open');
   document.getElementById('dayModalClose').addEventListener('click', closeDayModal);
+  const sel = document.getElementById('daySourceSelect');
+  if (sel) {
+    sel.addEventListener('change', () => {
+      const chosen = sources.find(s => s.id === sel.value) || initial;
+      document.getElementById('dayDetailDynamic').innerHTML =
+        renderDayDetailDynamic(chosen.day, loc, chosen.label, hasCompare);
+    });
+  }
 }
 
 function closeDayModal() {
